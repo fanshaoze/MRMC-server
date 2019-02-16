@@ -50,6 +50,7 @@ public class Main// 主类
 
 	public static void SendConfiguration()// 下发所有节点的配置
 	{
+		System.out.println("send here");
 		SendToNode("04:F0:21:39:64:26", "SETLINK 04:F0:21:39:64:26#DISABLED 04:F0:21:39:64:25#36#link203");
 		SendToNode("04:F0:21:39:64:20", "SETLINK 04:F0:21:39:64:20#6#link204 04:F0:21:39:64:1F#36#link203");
 		SendToNode("04:F0:21:39:64:06", "SETLINK 04:F0:21:39:64:06#6#link204 04:F0:21:39:64:05#DISABLED");
@@ -62,7 +63,8 @@ public class Main// 主类
 		{
 			for (ConnectionThreadSendCommand c : Connections.sendCommandList)// 在发送命令连接列表中，找到nodeid相同的连接
 			{
-				if (c.nodeID.equals(nodeid))
+				//if (c.nodeID.equals(nodeid))
+				if (true)
 				{
 					ctsc = c;
 					break;
@@ -73,6 +75,7 @@ public class Main// 主类
 		{
 			return;
 		}
+		System.out.println("send here!");
 		ctsc.sendCommand(command);// 发送命令
 	}
 }
@@ -139,8 +142,8 @@ class ConnectionThreadReceive extends Thread
 				System.out.print(line);
 				line.replace("\r", ""); // 去除行尾的换行符
 				line.replace("\n", "");
-				line = "NEIGHBOR 04:F0:21:39:64:1C 04:F0:21:39:64:1B 36 04:f0:21:39:64:1f"
-						+ "#-28#-95#780.000000#VHT-MCS$9$80MHz$VHT-NSS$2#866.000000#VHT-MCS$9$80MHz$short$GI$VHT-NSS$2";
+				//line = "NEIGHBOR 04:F0:21:39:64:1C 04:F0:21:39:64:1B 36 04:f0:21:39:64:1f"
+				//		+ "#-28#-95#780.000000#VHT-MCS$9$80MHz$VHT-NSS$2#866.000000#VHT-MCS$9$80MHz$short$GI$VHT-NSS$2";
 				String[] parts = line.split(" "); // 以空格为分隔符，对接收到的一行进行分割
 				String command = parts[0];
 				System.out.println("command : "+command);
@@ -268,12 +271,15 @@ class ServerThreadSendCommand extends Thread // 此线程监听用于下发节点配置的端口
 		try
 		{
 			ServerSocket serverSocket = new ServerSocket(10002, 10);// 监听10002端口
+			System.out.println("start connect");
 			while (true)// 一直循环
 			{
 				Socket socket = serverSocket.accept();// 接受连接
+				System.out.println("accept");
 				ConnectionThreadSendCommand ctsc = new ConnectionThreadSendCommand(socket);
 				synchronized (Connections.sendCommandListLock)// 对发送命令连接列表加锁
 				{
+					System.out.println("synchronized");
 					Connections.sendCommandList.add(ctsc);// 将当前连接加入到列表中
 				}
 				ctsc.start();// 启动线程
@@ -304,6 +310,7 @@ class ConnectionThreadSendCommand extends Thread// 用于发送命令的连接线程
 	@Override
 	public void run() // 线程运行时，执行此函数
 	{
+		System.out.println("ConnectionThreadSendCommand ");
 		InputStream is = null;
 		Scanner scanner = null;
 		OutputStream os = null;
@@ -317,6 +324,7 @@ class ConnectionThreadSendCommand extends Thread// 用于发送命令的连接线程
 			printer = new PrintWriter(os);// 用PrintWriter包装输出流
 
 			String line = scanner.nextLine();// 读取一行
+			System.out.println(line);
 			line.replace("\r", ""); // 去除行尾的换行符
 			line.replace("\n", "");
 
@@ -332,6 +340,7 @@ class ConnectionThreadSendCommand extends Thread// 用于发送命令的连接线程
 						commandToSend.remove(0);
 
 						printer.print(command + "\r\n");// 发送此命令
+						System.out.println("printer: "+ command);
 					}
 				}
 				Thread.sleep(100);
@@ -364,6 +373,8 @@ class ConnectionThreadSendCommand extends Thread// 用于发送命令的连接线程
 
 	public void sendCommand(String command)// 使用当前的连接发送一条命令
 	{
+		System.out.println("sendCommand, "+command);
+		
 		synchronized (queueLock)// 对命令队列加锁
 		{
 			commandToSend.add(command);// 将命令放入发送队列中
