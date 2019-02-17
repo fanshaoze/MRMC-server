@@ -339,7 +339,9 @@ class ConnectionThreadSendCommand extends Thread// 用于发送命令的连接线程
 						String command = commandToSend.get(0);// 取出队列的头部元素
 						commandToSend.remove(0);
 
-						printer.print(command + "\r\n");// 发送此命令
+						printer.println(command + "\r\n");// 发送此命令
+						//os.flush();
+						printer.flush();
 						System.out.println("printer: "+ command);
 					}
 				}
