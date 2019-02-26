@@ -11,19 +11,26 @@ public class Main// 主类
 {
 	private static ServerThreadReceive str; // 用于接收邻居信息的服务器线程
 	private static ServerThreadSendCommand stsc;// 用于发送控制命令的服务器线程
-
+	
 	public static ArrayList<NodeInfo> nodes;// 节点信息的列表
 	public static Object nodesLock;// 列表的锁
 
 	private static MainWindow mainWindow;
-
+	
+	public static String rootMacaddr;
+	public static double[][][][] NeiInforArrary;
+	public static int channel5G = 36;
+	public static int channel2G = 6;
+	
 	public static void main(String[] args)// 程序的入口点
 	{
 		Connections.receiveList = new ArrayList<ConnectionThreadReceive>();// 初始化连接列表
 		Connections.receiveListLock = new Object();
 		Connections.sendCommandList = new ArrayList<ConnectionThreadSendCommand>();
 		Connections.sendCommandListLock = new Object();
-
+		
+		rootMacaddr = "04:F0:21:39:64:26";
+		
 		nodes = new ArrayList<NodeInfo>();// 初始化节点信息列表
 		nodesLock = new Object();// 初始化列表的锁
 
@@ -50,12 +57,189 @@ public class Main// 主类
 
 	public static void SendConfiguration()// 下发所有节点的配置
 	{
+		
+		
 		System.out.println("send here");
 		SendToNode("04:F0:21:39:64:26", "SETLINK 04:F0:21:39:64:26#DISABLED 04:F0:21:39:64:25#36#link203");
 		SendToNode("04:F0:21:39:64:20", "SETLINK 04:F0:21:39:64:20#6#link204 04:F0:21:39:64:1F#36#link203");
 		SendToNode("04:F0:21:39:64:06", "SETLINK 04:F0:21:39:64:06#6#link204 04:F0:21:39:64:05#DISABLED");
+		
+		//SendToNode("04:F0:21:39:64:06", "SETLINK 04:F0:21:39:64:06#6#link204 04:F0:21:39:64:05#DISABLED");
+		//SendToNode("04:F0:21:39:64:26", "SETLINK 04:F0:21:39:64:26#6#link204 04:F0:21:39:64:25#DISABLED");
+		//SendToNode("04:F0:21:39:64:1C", "SETLINK 04:F0:21:39:64:1B#36#link204 04:F0:21:39:64:1F#36#link203");
 	}
+	public static void BFSofMRMC(){// MRMC的初步算法：广度优先搜索
+		
+		int i,j,k= 0;
+		int index = 0;
+		int front = 0;
+		int back = 0;
+		int elem = 0;
+		int a,b,c,d,e;
+		int flag = 0;
+		NodeInfo niTemp;
+		NodeInfo niTemp1;
+		int radioNo = 0;
+		int nodeNum = 0;
+		int radioNum = 0;
+		RadioInfo radioTemp;
+		RadioInfo radioTemp1;
+		nodeNum = nodes.size();
+		NodeInfo nis = nodes.get(0);
+		radioNum = nis.radioInfo.size();
+		int [][] visited = new int [nodes.size()][nis.radioInfo.size()];
+		double[][] resultTemp = new double[nodes.size()][nis.radioInfo.size()];
+		String[] results = new String[nodeNum];
+		
+		
+		for(NodeInfo ni: Main.nodes){
+			
+			if(ni.nodeID.equals(rootMacaddr)){
+				//ni_temp = (NodeInfo)
+			}
+			//i++;
+		}
+		
+		compose();
+		int que[] = new int[1000];
+		for(i = 0;i<1000;i++){
+			que[i] = -1;
+		}
+		
+		
+		for(a = 0;a<nodeNum;a++){
+			for(b = 0;b<radioNum;b++){
+				resultTemp[a][b] = 0.0;
 
+			}
+		}
+		for(a = 0;a<nodeNum;a++){
+			for(b = 0;b<radioNum;b++){
+				visited[a][b] = 0;	
+			}
+		}
+		que[0] = 0;
+		back+=1;
+		//队列，元素是nodeID，每次找的射频是 t%node-number，找这个neighbor下的
+		//System.out.println("课程：" + c3.name + "第一次出现的索引位置为：" + coursesToSelect.indexOf(c3));
+		while(front != back){
+			String radioMac = null;
+			int channel = 0;
+			String ssid;
+			elem = que[front];
+			front += 1;
+			niTemp = nodes.get(elem);
+			for (i = 0;i<radioNum;i++){
+				if (visited[elem][i] == 0) {
+					visited[elem][i] = 1;
+					radioMac = niTemp.radioInfo.get(i).radioNumber;
+					if(i == 0) channel = channel2G;
+					else channel = channel5G;
+					break;
+				}
+			}
+			flag = 0;
+			String[] submac = radioMac.split(":");
+			ssid = "link" + submac[submac.length-1];
+			radioTemp = niTemp.radioInfo.get(i);
+			for(NeighborInfo nei : radioTemp.neighborList){
+				for(j = 0;j<nodeNum;j++){
+					niTemp1 = nodes.get(j);
+					for(k = 0;k<radioNo;k++){
+						radioTemp1 = niTemp1.radioInfo.get(k);
+						if(radioTemp1.radioNumber.equals(nei.neighborMac)){
+							if(visited[j][k] == 0){
+								flag = 1;
+								//应当增加关于信噪比的判断
+								nodes.get(j).radioInfo.get(k).assignedssid = ssid;
+								nodes.get(j).radioInfo.get(k).assignedChannel = channel;
+								resultTemp[j][k] = 1;
+								
+								visited[j][k] = 1;
+								que[back] = j;
+								back+=1;
+							}
+						}
+					}
+				}
+				
+				//获取nei里面，关于node的信息
+			}
+			if(flag == 1){
+				nodes.get(elem).radioInfo.get(i).assignedssid = ssid;
+				nodes.get(elem).radioInfo.get(i).assignedChannel = channel;
+				resultTemp[elem][i] = 1;
+			}
+		}
+		for(a = 0;a<nodeNum;a++){
+			results[a] = "SETLINK ";
+			for(b = 0;b<radioNum;b++){
+				String subRadioMac = nodes.get(elem).radioInfo.get(i).assignedssid.substring(0, 4);
+				if (resultTemp[a][b] == 1){
+					radioTemp1 =  nodes.get(elem).radioInfo.get(i);
+					results[a] += radioTemp1.radioNumber+"#"+radioTemp1.assignedChannel+"#"+radioTemp1.assignedssid+" ";
+				}
+			}
+			results[a] = results[a].substring(0, results[a].length()-2);
+		}
+		for(a = 0;a<nodeNum;a++){
+			SendToNode(nodes.get(a).nodeID, results[a]);
+		}
+		//组合形成字符串。ssid，channel
+		//String 
+	}
+	public static boolean queEmpty(int que[])// 组合形成
+	{
+		int i = 0; 
+		for(i = 0;i<que.length;i++){
+			if(que[i] != 0){
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	
+	public static void compose()// 组合形成
+	{
+		int a,b,c,d,e;
+		int neiNum;
+		RadioInfo ra;
+		RadioInfo ras;
+		System.out.println("send here");
+		NodeInfo ni = nodes.get(0);
+		NodeInfo nis;
+		NeiInforArrary = new double[nodes.size()][nodes.size()][ni.radioInfo.size()][ni.radioInfo.size()];
+		for(a = 0;a<nodes.size();a++){
+			for(b = 0;b<ni.radioInfo.size();b++){
+				for(d = 0;d<nodes.size();d++){
+					for(e = 0;e<ni.radioInfo.size();e++){
+						NeiInforArrary[a][d][b][e] = 0.0;
+					}
+				}	
+			}
+		}
+		for(a = 0;a<nodes.size();a++){
+			ni = nodes.get(a);
+			for(b = 0;b<ni.radioInfo.size();b++){
+				ra = ni.radioInfo.get(b);
+				neiNum = ra.neighborList.size(); 
+				for(c = 0;c<neiNum;c++){
+					NeighborInfo nei = ra.neighborList.get(c);
+					for(d = 0;d<nodes.size();d++){
+						nis = nodes.get(d);
+						for(e = 0;e<nis.radioInfo.size();e++){
+							ras = nis.radioInfo.get(e);
+							if(nei.neighborMac.equals(ras.radioNumber)){
+								NeiInforArrary[a][d][b][e] = nei.signal;
+							}
+						}	
+					}
+				}
+			}
+		}
+	}
+	
 	private static void SendToNode(String nodeid, String command)// 向某个指定的节点发送一条命令
 	{
 		ConnectionThreadSendCommand ctsc = null;
@@ -63,7 +247,9 @@ public class Main// 主类
 		{
 			for (ConnectionThreadSendCommand c : Connections.sendCommandList)// 在发送命令连接列表中，找到nodeid相同的连接
 			{
-				//if (c.nodeID.equals(nodeid))
+				System.out.println("nodeID : "+c.nodeID);
+				System.out.println("nodeid : "+nodeid);
+				if (c.nodeID.equals(nodeid))
 				if (true)
 				{
 					ctsc = c;
@@ -307,6 +493,7 @@ class ConnectionThreadSendCommand extends Thread// 用于发送命令的连接线程
 		queueLock = new Object();
 	}
 
+	
 	@Override
 	public void run() // 线程运行时，执行此函数
 	{
@@ -394,6 +581,7 @@ class RadioInfo // radio信息
 {
 	public String radioNumber;
 	public int assignedChannel;
+	public String assignedssid;
 	public ArrayList<NeighborInfo> neighborList;
 }
 
