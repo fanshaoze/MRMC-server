@@ -28,18 +28,18 @@ public class Main// 主类
 	public static void main(String[] args)// 程序的入口点
 	{
 		
-/*
+
 		Connections.receiveList = new ArrayList<ConnectionThreadReceive>();// 初始化连接列表
 		Connections.receiveListLock = new Object();
 		Connections.sendCommandList = new ArrayList<ConnectionThreadSendCommand>();
 		Connections.sendCommandListLock = new Object();
-		*/
+
 		rootMacaddr = "04:F0:21:39:64:26";
 		
 		nodes = new ArrayList<NodeInfo>();// 初始化节点信息列表
 		nodesLock = new Object();// 初始化列表的锁
-		BFSofMRMC();
-/*
+		//BFSofMRMC();
+
 		str = new ServerThreadReceive();// 创建用于接收邻居信息的服务器线程
 		str.start();// 启动线程
 
@@ -59,7 +59,7 @@ public class Main// 主类
 				SendConfiguration();
 			}
 		}
-		*/
+		
 	}
 
 	public static void SendConfiguration()// 下发所有节点的配置
@@ -67,9 +67,12 @@ public class Main// 主类
 		
 		
 		System.out.println("send here");
-		SendToNode("04:F0:21:39:64:26", "SETLINK 04:F0:21:39:64:26#DISABLED 04:F0:21:39:64:25#36#link203");
-		SendToNode("04:F0:21:39:64:20", "SETLINK 04:F0:21:39:64:20#6#link204 04:F0:21:39:64:1F#36#link203");
-		SendToNode("04:F0:21:39:64:06", "SETLINK 04:F0:21:39:64:06#6#link204 04:F0:21:39:64:05#DISABLED");
+		//SendToNode("04:F0:21:39:64:26", "SETLINK 04:F0:21:39:64:26#DISABLED 04:F0:21:39:64:25#36#link203");
+		//SendToNode("04:F0:21:39:64:20", "SETLINK 04:F0:21:39:64:20#6#link204 04:F0:21:39:64:1F#36#link203");
+		//SendToNode("04:F0:21:39:64:06", "SETLINK 04:F0:21:39:64:06#6#link204 04:F0:21:39:64:05#DISABLED");
+		
+		BFSofMRMC();
+		
 		
 		//SendToNode("04:F0:21:39:64:06", "SETLINK 04:F0:21:39:64:06#6#link204 04:F0:21:39:64:05#DISABLED");
 		//SendToNode("04:F0:21:39:64:26", "SETLINK 04:F0:21:39:64:26#6#link204 04:F0:21:39:64:25#DISABLED");
@@ -77,14 +80,15 @@ public class Main// 主类
 	}
 	public static void BFSofMRMC(){// MRMC的初步算法：广度优先搜索
 		//读文件的方式
-		BFStestinit("");
+		//BFStestinit("");
 		
 		int i,j,k= 0;
 		int front = 0;
 		int back = 0;
 		int elem = 0;
 		int a,b,c,d,e;
-		int flag,flag1 = 0;
+		int flag,flag1,flag2 = 0;
+		int visitednum = 0;
 		NodeInfo niTemp;
 		NodeInfo niTemp1;
 		int radioNo = 0;
@@ -150,6 +154,8 @@ public class Main// 主类
 		//System.out.println("课程：" + c3.name + "第一次出现的索引位置为：" + coursesToSelect.indexOf(c3));
 		while(front != back){
 			flag1 = 0;
+			flag2 = 0;
+			visitednum = 0;
 			String radioMac = null;
 			int channel = 0;
 			String ssid;
@@ -159,12 +165,35 @@ public class Main// 主类
 			for (i = 0;i<radioNum;i++){
 				if (visited[elem][i] == 0 && niTemp.radioInfo.get(i).neighborList.size()>0) {
 					//邻居判断
-					visited[elem][i] = 1;
-					radioMac = niTemp.radioInfo.get(i).radioNumber;
-					if(i == 0) channel = channel2G;
-					else channel = channel5G;
-					flag1 = 1;
-					break;
+					for(a = 0;a<nodeNum;a++){
+						for (b = 0;b<radioNum;b++){
+							if(NeiInforArrary[elem][a][i][b] != 0){
+								visitednum = 0;
+								for(j = 0;j<radioNum;j++){
+									if(visited[a][j] == 0){
+										visitednum++;
+									}
+								}
+							}
+							if(visitednum == radioNum){
+								flag2 = 1;
+								break;
+							}
+						}
+						if(flag2 == 1) break;
+					}
+					if(flag2 == 1){
+						visited[elem][i] = 1;
+						radioMac = niTemp.radioInfo.get(i).radioNumber;
+						if(i == 0) channel = channel2G;
+						else channel = channel5G;
+						flag1 = 1;
+						break;
+					}
+					else{
+						visited[elem][i] = 1;
+						continue;
+					}
 				}
 				else if (visited[elem][i] == 0 && niTemp.radioInfo.get(i).neighborList.size()== 0) {
 					//邻居判断
